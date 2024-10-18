@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego Musical MIDI</title>
+    <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #output {
+            margin-top: 20px;
+        }
+        #piano-roll {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .key {
+            width: 40px;
+            height: 200px;
+            border: 1px solid black;
+            margin: 0 2px;
+            display: inline-block;
+            cursor: pointer;
+            background-color: white;
+        }
+        .key.black {
+            width: 30px;
+            height: 120px;
+            background-color: black;
+            position: relative;
+            z-index: 1;
+            margin-left: -15px;
+            margin-right: -15px;
+        }
+        .key.pressed {
+            background-color: lightgray;
+        }
+        * {
+  box-sizing:border-box;
+  font-family: 'Open Sans', sans-serif;
+}
+h1,h2,h3,p{
+  color:#7f8c8d;
+}
+//Mixins
+@mixin background-image-cover($img-uri, $background-top:"center", $background-left:"center", $background-attachment:"fixed") {
+  background: url($img-uri) no-repeat unquote($background-top) unquote($background-left) unquote($background-attachment); 
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;  
+}
+
+@mixin absolute-position-center(){
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:0;
+  right:0;
+  margin:auto;
+}
+
+@mixin border-radius($radius) {
+  -webkit-border-radius: $radius;
+  border-radius: $radius;
+  background-clip: padding-box;  /* stops bg color from leaking outside the border: */
+}
+
+@mixin box-shadow() {
+    -webkit-box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+  -moz-box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+}
+
+@mixin animation($animate...) {
+    $max: length($animate);
+    $animations: '';
+
+    @for $i from 1 through $max {
+        $animations: #{$animations + nth($animate, $i)};
+
+        @if $i < $max {
+            $animations: #{$animations + ", "};
+        }
+    }
+    -webkit-animation: $animations;
+    -moz-animation:    $animations;
+    -o-animation:      $animations;
+    animation:         $animations;
+}
+
+@mixin keyframes($animationName) {
+    @-webkit-keyframes #{$animationName} {
+        @content;
+    }
+    @-moz-keyframes #{$animationName} {
+        @content;
+    }
+    @-o-keyframes #{$animationName} {
+        @content;
+    }
+    @keyframes #{$animationName} {
+        @content;
+    }
+}
+
+@include keyframes(pulse) {
+  0%   { transform:scale(1.0,1.0); }
+  70%  { transform:scale(1.1,1.1); }
+  100% { transform:scale(1.0,1.0); }
+}
+
+section{
+  width:100%;
+  height:100vh;
+  background-color:#EFEFEF;
+}
+
+
+.card{
+  @include absolute-position-center();
+  @include border-radius(30px);
+  @include box-shadow();
+  height:300px;
+  width:400px;
+  background-color:rgba(255,255,255,1);
+  padding:40px;
+  bottom:20%;
+  text-align:center;
+  z-index:100;
+  
+  h1{
+    font-size:2em;
+    font-weight:300;
+  }
+  i{
+    position:absolute;
+    font-size: 12em;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    color: rgba(46, 204, 113,.1);
+  }
+}
+
+.testing{
+  img{
+    position:absolute;
+    max-width:130px;
+    margin:auto;
+    left:0;
+    right:0;
+    @include animation('pulse 1.5s infinite');
+  }
+}
+
+.result{
+  @include absolute-position-center();
+  @include border-radius(30px);
+  width:400px;
+  height:200px;
+  z-index:10;
+  bottom:20%;
+  .alert{
+    @include border-radius(30px);
+    position:absolute;
+    width:100%;
+    height:97%;
+    top:0;
+    transition: all .5s cubic-bezier(0.175, 0.885, 0.320, 1.275);
+    h1{
+      color:white;
+      text-align:center;
+      margin-top:100px;
+      font-weight:300;
+      font-size:2em;
+    }
+  }  
+    .success{
+      background-color:#58AB6E;
+    }
+    .failure{
+      background-color:#e74c3c;
+    }
+}  
+.bottom-card-clip{
+    @include absolute-position-center();
+    width:100px;
+    height:100px;
+    border-radius:50%;
+    background-color:#EFEFEF;
+    position:absolute;
+  }
+
+.text{
+  
+  @include absolute-position-center();
+  h1{
+    font-weight:300;
+    font-size:5em;
+    text-align:center;
+  }
+}
+
+.cls-1 {
+  fill: white;
+  @include box-shadow();
+}
+#Layer_1{
+  fill:black;
+}
+    
+    </style>
+</head>
+<body>
+    <h1>Juego Musical con Teclado MIDI</h1>
+    <p>Toca la nota que ves en el pentagrama.</p>
+    <section>
+   <div class="testing card">
+    <h1>Validating Feelings...</h1>
+    <img class="full" src="http://static.rhomes.properties/images/full-heart.png">
+  </div>
+  <div class="result">
+    <div class="success alert">
+      <h1>Looks good, buddy!</h1>
+    </div>
+    <div class="failure alert">
+      <h1>Almost there, try again.</h1>
+    </div>
+  </div>
+</section>
+    <div id="output"></div>
+    <p id="result"></p>
+
+    <!-- Piano Roll -->
+    <div id="piano-roll">
+
+    </div>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+
+    <script>
+
+        let vexNotes = [];
+        let octave = -1;
+        const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+        for(i = 12; i <= 107; i++ ){
+            if((i % 12) === 0) {
+                octave ++;
+            }
+            
+            vexNotes.push({
+                'octave' : octave,
+                'note': notes[(i % 12)],
+                'midi': i,
+                'vexNote': `${notes[(i % 12)]}/${octave}`,
+            });
+        }
+
+        let correctNote = 60; // C4 por defecto
+        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function drawPianoRoll() {
+            const container = document.getElementById('piano-roll');
+            container.innerHTML = '';
+            let htmlContent = '';
+            vexNotes.forEach(function(note){
+                if(note.note.includes('#')){
+                    htmlContent += `<div class="key black" data-note="${note.midi}"></div>`;
+                }else{
+                    htmlContent += `<div class="key" data-note="${note.midi}"></div>`;
+                }
+            });
+
+            container.innerHTML = htmlContent;
+        }
+
+        function drawStave(note, key = "treble") {
+            const div = document.getElementById("output");
+            div.innerHTML = ""; // Limpiar el pentagrama anterior
+
+            const { Renderer, Stave, StaveNote } = Vex.Flow;
+            const renderer = new Renderer(div, Renderer.Backends.SVG);
+            renderer.resize(500, 200);
+            const context = renderer.getContext();
+            const stave = new Stave(10, 40, 400);
+            stave.addClef(key).setContext(context).draw();
+
+            // Dibujar la nota
+            const notes = [new StaveNote({
+                keys: [note], // Cambiar esto para diferentes notas
+                duration: "q" // Nota negra
+            })];
+
+            const voice = new Vex.Flow.Voice({ num_beats: 1, beat_value: 4 });
+            voice.addTickables(notes);
+            const formatter = new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 400);
+            voice.draw(context, stave);
+        }
+
+        function getRandomNote() {
+            const randomIndex = Math.floor(Math.random() * vexNotes.length);
+            correctNote = vexNotes[randomIndex].midi;
+            return vexNotes[randomIndex].vexNote;
+        }
+
+        function checkNotePressed(note) {
+            const resultElement = document.getElementById("result");
+            if (note === correctNote) {
+                resultElement.innerHTML = "¡Correcto!";
+                setTimeout(() => {
+                resultElement.innerHTML = "";
+                drawStave(getRandomNote());
+            }, 1000);
+            } else {
+                resultElement.innerHTML = "Incorrecto. La nota correcta era " + correctNote;
+            }
+            // Generar una nueva nota
+            
+        }
+
+        function playNote(note) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.type = 'sine'; // Onda senoidal
+
+            // Calcular frecuencia MIDI (A4 = 440 Hz)
+            const frequency = 440 * Math.pow(2, (note - 69) / 12);
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            // Iniciar y detener el sonido
+            oscillator.start();
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 2);
+            oscillator.stop(audioContext.currentTime + 1.2);
+        }
+
+        // Inicializar pentagrama con una nota aleatoria
+        drawStave(getRandomNote(), 'bass');
+
+        // Capturar entrada MIDI real
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then((midiAccess) => {
+                midiAccess.inputs.forEach((input) => {
+                    input.onmidimessage = (message) => {
+                        const [command, note, velocity] = message.data;
+                        if (command === 144 && velocity > 0) {
+                            checkNotePressed(note);
+                            playNote(note); // Reproducir sonido
+                        }
+                    };
+                });
+            }, () => {
+                alert("No se pudo acceder a dispositivos MIDI.");
+            });
+        } else {
+            alert("Web MIDI API no es soportada en este navegador.");
+        }
+
+        drawPianoRoll();
+
+        // Simular señales MIDI desde el piano roll
+        const pianoRoll = document.getElementById('piano-roll');
+        pianoRoll.addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('key')) {
+                const note = parseInt(target.getAttribute('data-note'));
+                target.classList.add('pressed');
+                checkNotePressed(note);
+                playNote(note); // Reproducir sonido
+
+                // Simular señal MIDI soltando la tecla
+                setTimeout(() => {
+                    target.classList.remove('pressed');
+                }, 200);
+            }
+        });
+
+        $(document).ready(function(){
+            var displaySuccess = function(){
+  $(".success").css({"-webkit-transform":"translate(0,170px)"});
+}
+
+var hideSuccess = function(){
+  $(".success").css({"-webkit-transform":"translate(0,0)"});
+}
+
+var displayFailure = function(){
+  $(".failure").css({"-webkit-transform":"translate(0,170px)"});
+}
+
+var hideFailure = function(){
+  $(".failure").css({"-webkit-transform":"translate(0,0)"});
+}
+
+
+setTimeout(displaySuccess, 1000);
+setTimeout(hideSuccess, 4000);
+setTimeout(displayFailure, 5000);
+setTimeout(hideFailure, 8000);
+        });
+
+
+    </script>
+</body>
+</html>

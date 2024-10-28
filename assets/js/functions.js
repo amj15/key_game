@@ -159,12 +159,11 @@ function selectMIDIDevice(midiAccess, deviceId) {
 
 // Función para manejar eventos MIDI
 function onMIDIMessage(message) {
-    console.log('on MIDI message');
     const [command, note, velocity] = message.data;
-    console.log(command,note,velocity);
 
     // Nota presionada
     if (command === 144 && velocity > 0) {
+        drawPressedNote(document.querySelector(`div[data-note="${note}"]`));
         checkNotePressed(note);
         playNote(note); // Lógica para reproducir sonido, si es necesario
     }
@@ -184,15 +183,18 @@ drawPianoRoll();
 // Simular señales MIDI desde el piano roll
 const pianoRoll = document.getElementById('piano-roll');
 pianoRoll.addEventListener('click', (event) => {
-    const target = event.target;
-    if (target.classList.contains('key')) {
-        const note = parseInt(target.getAttribute('data-note'));
-        target.classList.add('pressed');
+    drawPressedNote(event.target)
+});
+
+function drawPressedNote(element){
+    if (element.classList.contains('key')) {
+        const note = parseInt(element.getAttribute('data-note'));
+        element.classList.add('pressed');
         const correctElement = document.querySelector(`div[data-note="${selectedNote.midi}"]`);
         correctElement.classList.add('correct');
         playNote(note); // Reproducir sonido
         setTimeout(() => {
-            target.classList.remove('pressed');
+            element.classList.remove('pressed');
             correctElement.classList.remove('correct');
         }, 200);
 
@@ -211,7 +213,7 @@ pianoRoll.addEventListener('click', (event) => {
         // Simular señal MIDI soltando la tecla
         
     }
-});
+}
 
 function generateGif(type) {
     const giphy = {

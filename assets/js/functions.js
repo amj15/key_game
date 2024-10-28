@@ -2,6 +2,10 @@ let vexNotes = [];
 let octave = -1;
 const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 let selectedNote = '';
+const upperF = 64;
+const lowerF = 30;
+const upperG = 92;
+const lowerG = 55;
 
 for (i = 12; i <= 107; i++) {
     if ((i % 12) === 0) {
@@ -24,10 +28,12 @@ function drawPianoRoll() {
     container.innerHTML = '';
     let htmlContent = '';
     vexNotes.forEach(function (note) {
-        if (note.note.includes('#')) {
-            htmlContent += `<div class="key black" data-note="${note.midi}"></div>`;
-        } else {
-            htmlContent += `<div class="key" data-note="${note.midi}"></div>`;
+        if(note.midi >= (lowerF-1) && note.midi <= (upperG+1)){
+            if (note.note.includes('#')) {
+                htmlContent += `<div class="key black" data-note="${note.midi}"></div>`;
+            } else {
+                htmlContent += `<div class="key" data-note="${note.midi}"></div>`;
+            }
         }
     });
 
@@ -68,14 +74,26 @@ function drawStave(note, key = "treble") {
 }
 
 function getRandomNote() {
-    const randomIndex = Math.floor(Math.random() * 40) + 40;
+    const randomIndex = randomIntBetween(lowerF, upperG);
     correctNote = vexNotes[randomIndex].midi;
     selectedNote = vexNotes[randomIndex];
     return vexNotes[randomIndex].vexNote;
 }
 
 function getRandomClef() {
+    if(selectedNote < lowerG){
+        return 'bass';
+    }
+
+    if(selectedNote > upperF){
+        return 'treble';
+    }
+
     return Math.random() < 0.5 ? 'bass' : 'treble';
+}
+
+function randomIntBetween(min, max){
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function playNote(note) {

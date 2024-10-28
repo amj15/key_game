@@ -101,6 +101,7 @@ function playNote(note) {
 drawStave(getRandomNote(), getRandomClef());
 
 async function connectMIDIDevice() {
+    console.log('MIDI connected');
     // Verificar si el acceso MIDI ya fue concedido
     if (localStorage.getItem('midiPermissionGranted')) {
         navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
@@ -114,7 +115,8 @@ async function connectMIDIDevice() {
 }
 
 function onMIDISuccess(midiAccess) {
-
+    console.log('on MIDI success');
+    console.log(midiAccess);
     // Configurar la captura de mensajes MIDI en cada entrada
     midiAccess.inputs.forEach((input) => {
         input.onmidimessage = onMIDIMessage;
@@ -127,7 +129,9 @@ function onMIDIFailure() {
 
 // Función para manejar eventos MIDI
 function onMIDIMessage(message) {
+    console.log('on MIDI message');
     const [command, note, velocity] = message.data;
+    console.log(command,note,velocity);
 
     // Nota presionada
     if (command === 144 && velocity > 0) {

@@ -106,7 +106,6 @@ async function connectMIDIDevice() {
     if (localStorage.getItem('midiPermissionGranted')) {
         navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
     } else {
-        // Solicitar permiso al usuario
         navigator.requestMIDIAccess().then((access) => {
             localStorage.setItem('midiPermissionGranted', 'true');
             onMIDISuccess(access);
@@ -117,14 +116,45 @@ async function connectMIDIDevice() {
 function onMIDISuccess(midiAccess) {
     console.log('on MIDI success');
     console.log(midiAccess);
-    // Configurar la captura de mensajes MIDI en cada entrada
+    const midiSelect = document.getElementById('midiSelect');
+    midiSelect.innerHTML = ""; // Limpiar opciones anteriores
+
+    // Llenar el <select> con dispositivos MIDI de entrada
     midiAccess.inputs.forEach((input) => {
-        input.onmidimessage = onMIDIMessage;
+        const option = document.createElement('option');
+        option.value = input.id;
+        option.textContent = input.name || `Dispositivo MIDI ${input.id}`;
+        midiSelect.appendChild(option);
     });
+
+    // Cambiar dispositivo MIDI cuando el usuario selecciona uno
+    midiSelect.addEventListener('change', (event) => {
+        const selectedDeviceId = event.target.value;
+        selectMIDIDevice(midiAccess, selectedDeviceId);
+    });
+
+    // Seleccionar el primer dispositivo por defecto
+    if (midiSelect.options.length > 0) {
+        selectMIDIDevice(midiAccess, midiSelect.options[0].value);
+    }
 }
 
 function onMIDIFailure() {
     alert("No se pudo acceder a dispositivos MIDI.");
+}
+
+function selectMIDIDevice(midiAccess, deviceId) {
+    // Quitar listeners anteriores
+    midiAccess.inputs.forEach((input) => {
+        input.onmidimessage = null;
+    });
+
+    // Configurar el nuevo dispositivo seleccionado
+    const selectedInput = midiAccess.inputs.get(deviceId);
+    if (selectedInput) {
+        selectedInput.onmidimessage = onMIDIMessage;
+        console.log(`Dispositivo MIDI seleccionado: ${selectedInput.name}`);
+    }
 }
 
 // Función para manejar eventos MIDI
